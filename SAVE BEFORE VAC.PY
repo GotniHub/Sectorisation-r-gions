@@ -92,16 +92,6 @@ if uploaded_file is not None and geojson_file:
     agglo = AgglomerativeClustering(n_clusters=5, linkage="ward")
     merged["Zone"] = agglo.fit_predict(geo_features)
 
-    # Ajouter nom lisible de la zone (Zone A, Zone B...)
-    merged["Nom_Zone"] = merged["Zone"].apply(lambda x: f"Zone {chr(65 + int(x))}")
-
-    # Créer dictionnaire Zone → Liste de départements
-    zones_dict = merged.groupby("Nom_Zone")["Departement"].apply(list).to_dict()
-
-    # Stocker dans session_state si pas déjà existant
-    if "zones_modifiables" not in st.session_state:
-        st.session_state.zones_modifiables = zones_dict
-
     # 5. Mise à jour des zones dans dept_data
     if "Zone" in dept_data.columns:
         dept_data = pd.merge(dept_data.drop("Zone", axis=1), merged[["Departement", "Zone"]], on="Departement", how="left")
@@ -312,13 +302,13 @@ if uploaded_file is not None and geojson_file:
                 "fillOpacity": 0.6
             },
 
-            tooltip=GeoJsonTooltip(fields=["nom", "code", "Zone", "CA"], aliases=["Département", "Code département", "Zone", "CA total"])
+            tooltip=GeoJsonTooltip(fields=["nom", "Zone", "CA"], aliases=["Département", "Zone", "CA total"])
         ).add_to(m)
 
         # Affichage dans Streamlit
         st.markdown("### Carte des départements sectorisés automatiquement")
         st_data = st_folium(m, width=1000)
-
+        
         # --- Modification manuelle des zones ---
         st.markdown("---")
         st.markdown("### 🛠 Modifier l’affectation des départements")
@@ -342,20 +332,12 @@ if uploaded_file is not None and geojson_file:
             else:
                 st.warning("Aucun département déplacé.")
 
-            # Réassigner les zones à partir de zones_modifiables
-            zone_map = {}
-            for zone, deps in st.session_state.zones_modifiables.items():
-                for dep in deps:
-                    zone_map[dep] = zone  # zone est déjà une string du type "Zone A"
-
-            dept_data["Zone"] = dept_data["Departement"].map(zone_map)
-
-        # # Export CSV
-        # csv_export = dept_data.copy()
-        # csv_export["Zone"] = csv_export["Zone"].apply(
-        #     lambda x: f"Zone {chr(65 + int(x))}" if pd.notnull(x) and not math.isnan(x) else "Zone ?"
-        # )   
-        # st.download_button("📥 Télécharger la sectorisation", data=csv_export.to_csv(index=False), file_name="sectorisation_par_departement.csv")
+        # Export CSV
+        csv_export = dept_data.copy()
+        csv_export["Zone"] = csv_export["Zone"].apply(
+            lambda x: f"Zone {chr(65 + int(x))}" if pd.notnull(x) and not math.isnan(x) else "Zone ?"
+        )   
+        st.download_button("📥 Télécharger la sectorisation", data=csv_export.to_csv(index=False), file_name="sectorisation_par_departement.csv")
 
 else:
     st.info("📎 Veuillez charger un fichier Excel et vérifier que le fichier GeoJSON `departements.geojson` est bien présent.")
