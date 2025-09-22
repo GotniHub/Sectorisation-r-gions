@@ -51,7 +51,7 @@ if uploaded_file is not None and geojson_file:
 
     # --- Étape 5 : Nettoyage & suite du pipeline
     df["Nb Visite"] = df["Nb Visite"].fillna(0)
-    df["CA 2023"] = df["CA 2023"].fillna(0)
+    df["CA 2024"] = df["CA 2024"].fillna(0)
 
     df["Nb Magasins"] = 1
 
@@ -60,7 +60,7 @@ if uploaded_file is not None and geojson_file:
     dept_data = df.groupby("Departement").agg({
         "Nb Magasins": "sum",
         "Nb Visite": "sum",
-        "CA 2023": "sum"
+        "CA 2024": "sum"
     }).reset_index()
 
     # 1. Extraire les centroïdes des départements
@@ -130,7 +130,7 @@ if uploaded_file is not None and geojson_file:
         row = dept_data[dept_data["Departement"] == code_dep]
         if not row.empty:
             feature["properties"]["Zone"] = f"Zone {chr(65 + int(row['Zone'].values[0]))}"
-            feature["properties"]["CA"] = int(row["CA 2023"].values[0])
+            feature["properties"]["CA"] = int(row["CA 2024"].values[0])
         else:
             feature["properties"]["Zone"] = "Non défini"
             feature["properties"]["CA"] = 0
@@ -166,13 +166,13 @@ if uploaded_file is not None and geojson_file:
                     excl_summary = excluded_depts.groupby(["Departement", region_col]).agg({
                         "Nb Magasins": "sum",
                         "Nb Visite": "sum",
-                        "CA 2023": "sum"
+                        "CA 2024": "sum"
                     }).reset_index().sort_values(by="Nb Magasins", ascending=False)
                 else:
                     excl_summary = excluded_depts.groupby("Departement").agg({
                         "Nb Magasins": "sum",
                         "Nb Visite": "sum",
-                        "CA 2023": "sum"
+                        "CA 2024": "sum"
                     }).reset_index().sort_values(by="Nb Magasins", ascending=False)
 
                 st.markdown("### 🧾 Détails par département non sectorisé :")
@@ -190,7 +190,7 @@ if uploaded_file is not None and geojson_file:
         # nb_magasins_total = len(df)
         nb_magasins_total = len(df_sectorised)
         nb_visites_total = df["Nb Visite"].sum()
-        ca_total_2023 = df["CA 2023"].sum()
+        ca_total_2024 = df["CA 2024"].sum()
         etp_total = round(nb_visites_total / diviseur_etp, 2)
 
         # 💅 CSS des cards
@@ -245,8 +245,8 @@ if uploaded_file is not None and geojson_file:
         with col3:
             st.markdown(f"""
             <div class="card">
-                <h2>{ca_total_2023:,.0f} €</h2>
-                <p>CA total 2023</p>
+                <h2>{ca_total_2024:,.0f} €</h2>
+                <p>CA total 2024</p>
                 <div class="delta">100%</div>
             </div>
             """, unsafe_allow_html=True)
@@ -262,10 +262,10 @@ if uploaded_file is not None and geojson_file:
             # === Tableau 1 : Nombre de magasins et CA total par département ===
         table1 = df.groupby("Departement").agg(
             Nombre_Magasins=('Nb Magasins', 'sum'),
-            Total_CA_2023=('CA 2023', 'sum')
+            Total_CA_2024=('CA 2024', 'sum')
         ).reset_index()
 
-        # st.dataframe(table1.style.format({"Total_CA_2023": "{:,.2f}"}), use_container_width=True)
+        # st.dataframe(table1.style.format({"Total_CA_2024": "{:,.2f}"}), use_container_width=True)
         # === Tableau 2 : Synthèse par zone ===
         # Convertir code Zone en A/B/C...
         dept_data["Nom_Zone"] = dept_data["Zone"].apply(lambda x: f"Zone {chr(65 + int(x))}" if pd.notnull(x) else "Zone ?")
@@ -274,7 +274,7 @@ if uploaded_file is not None and geojson_file:
         zone_summary = dept_data.groupby("Nom_Zone").agg({
             "Departement": lambda x: ', '.join(sorted(x)),
             "Nb Magasins": "sum",
-            "CA 2023": "sum",
+            "CA 2024": "sum",
             "Nb Visite": "sum"
         }).reset_index()
 
@@ -288,7 +288,7 @@ if uploaded_file is not None and geojson_file:
         # st.dataframe(zone_summary.style.format({"Total CA (€)": "{:,.2f}"}), use_container_width=True)
         with st.expander("📄 Détails statistiques par département et par zone", expanded=True):
             st.markdown("#### Par département")
-            st.dataframe(table1.style.format({"Total_CA_2023": lambda x: f"{x:,.0f}".replace(",", " ")}), use_container_width=True)
+            st.dataframe(table1.style.format({"Total_CA_2024": lambda x: f"{x:,.0f}".replace(",", " ")}), use_container_width=True)
 
             st.markdown("#### Par zone")
             st.dataframe(zone_summary.style.format({

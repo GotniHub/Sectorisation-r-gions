@@ -52,7 +52,7 @@ df["Departement"] = (
 
 # df["Departement"] = df["Departement"].astype(str).str.zfill(2)
 df["Nb Visite"] = df["Nb Visite"].fillna(0)
-df["CA 2023"] = df["CA 2023"].fillna(0)
+df["CA 2024"] = df["CA 2024"].fillna(0)
 df["Nb Magasins"] = 1
  
 # Colonne facultative
@@ -105,7 +105,7 @@ if client_name_col:
 clients_df = (
     df.assign(**{"Code du client": df["Code du client"].astype(str)})
       .groupby(group_cols, dropna=False)
-      .agg({"Nb Visite": "sum", "CA 2023": "sum", "Departement": pd.Series.nunique})
+      .agg({"Nb Visite": "sum", "CA 2024": "sum", "Departement": pd.Series.nunique})
       .reset_index()
       .rename(columns={"Departement": "Départements (nb distinct)"})
 )
@@ -134,7 +134,7 @@ edited_clients = st.data_editor(
             "Exclure", help="Cocher pour exclure ce magasin de tous les calculs."
         ),
         "Nb Visite": st.column_config.NumberColumn(format="%.0f"),
-        "CA 2023": st.column_config.NumberColumn(format="%.2f"),
+        "CA 2024": st.column_config.NumberColumn(format="%.2f"),
         "Départements (nb distinct)": st.column_config.NumberColumn(format="%.0f"),
     },
     key="editor_clients"
@@ -215,7 +215,7 @@ centroids_df = pd.DataFrame({
 dept_data = df_f.groupby("Departement").agg({
     "Nb Magasins": "sum",
     "Nb Visite": "sum",
-    "CA 2023": "sum"
+    "CA 2024": "sum"
 }).reset_index()
 
 merged = pd.merge(dept_data, centroids_df, on="Departement", how="left").dropna(subset=["lat", "lon"])
@@ -299,11 +299,11 @@ with st.sidebar.expander("⚠️ Magasins non sectorisés", expanded=True):
         region_col = "Région" if "Région" in excluded_depts.columns else ("Region" if "Region" in excluded_depts.columns else None)
         if region_col:
             excl_summary = (excluded_depts.groupby(["Departement", region_col])
-                            .agg({"Nb Magasins":"sum","Nb Visite":"sum","CA 2023":"sum"})
+                            .agg({"Nb Magasins":"sum","Nb Visite":"sum","CA 2024":"sum"})
                             .reset_index().sort_values(by="Nb Magasins", ascending=False))
         else:
             excl_summary = (excluded_depts.groupby("Departement")
-                            .agg({"Nb Magasins":"sum","Nb Visite":"sum","CA 2023":"sum"})
+                            .agg({"Nb Magasins":"sum","Nb Visite":"sum","CA 2024":"sum"})
                             .reset_index().sort_values(by="Nb Magasins", ascending=False))
 
         st.markdown("### 🧾 Détails par département non sectorisé :")
@@ -319,7 +319,7 @@ with st.sidebar.expander("⚠️ Magasins non sectorisés", expanded=True):
 # Calculs globaux
 nb_magasins_total = len(df_sectorised)
 nb_visites_total = df["Nb Visite"].sum()
-ca_total_2023 = df["CA 2023"].sum()
+ca_total_2024 = df["CA 2024"].sum()
 etp_total = round(nb_visites_total / diviseur_etp, 2)
 
 
@@ -375,8 +375,8 @@ col3, col4 = st.columns(2)
 with col3:
     st.markdown(f"""
     <div class="card">
-        <h2>{ca_total_2023:,.0f} €</h2>
-        <p>CA total 2023</p>
+        <h2>{ca_total_2024:,.0f} €</h2>
+        <p>CA total 2024</p>
         <div class="delta">100%</div>
     </div>
     """, unsafe_allow_html=True)
@@ -559,7 +559,7 @@ def build_zone_table(zones_dict, df_base, diviseur, region_col=None):
             zdf = zdf[~zdf["Code du client"].isin(seen)]
             seen.update(zdf["Code du client"])
 
-        ca = float(zdf["CA 2023"].sum())
+        ca = float(zdf["CA 2024"].sum())
         visites = float(zdf["Nb Visite"].sum())
         nb_magasins = int(zdf["Code du client"].nunique()) if "Code du client" in zdf.columns else int(zdf.shape[0])
         etp = visites / diviseur if diviseur > 0 else 0.0
@@ -590,7 +590,7 @@ def build_zone_table(zones_dict, df_base, diviseur, region_col=None):
             # "Régions (nb)": nb_regions,
             "Régions (liste)": regions_list,
             "Magasins": nb_magasins,
-            "CA 2023 (€)": ca,
+            "CA 2024 (€)": ca,
             "Nb Visites": visites,
             "ETP estimé": round(etp, 2),
             "Nb Visites / ETP": round(visites / etp, 2) if etp > 0 else 0.0,
@@ -600,7 +600,7 @@ def build_zone_table(zones_dict, df_base, diviseur, region_col=None):
     df_out = pd.DataFrame(rows).sort_values("Zone")
     # (Optionnel) ordre de colonnes agréable
     wanted = ["Zone","Départements","Régions (nb)","Régions (liste)","Magasins",
-              "CA 2023 (€)","Nb Visites","ETP estimé","Nb Visites / ETP","Nb Clients / ETP"]
+              "CA 2024 (€)","Nb Visites","ETP estimé","Nb Visites / ETP","Nb Clients / ETP"]
     return df_out[[c for c in wanted if c in df_out.columns]]
 
 # ---------- Indicateurs par RÉGION et par ZONE (avec /ETP) ----------
@@ -635,14 +635,14 @@ def build_zone_region_table(zones_dict, df_base, diviseur, region_col):
             g = zdf.groupby(region_col, dropna=False).agg(
                 **{
                     "Nb Clients": ("Code du client", "nunique"),
-                    "CA 2024 (€)": ("CA 2023", "sum"),
+                    "CA 2024 (€)": ("CA 2024", "sum"),
                     "Nb Visites": ("Nb Visite", "sum"),
                 }
             ).reset_index(names=["Région"])
         else:
             g = zdf.groupby(region_col, dropna=False).agg(
                 **{
-                    "CA 2024 (€)": ("CA 2023", "sum"),
+                    "CA 2024 (€)": ("CA 2024", "sum"),
                     "Nb Visites": ("Nb Visite", "sum"),
                     "Nb Clients": ("Departement", "size"),
                 }
@@ -682,7 +682,7 @@ with col1:
         st.session_state.zones_modifiables, df_f, diviseur_etp, region_col="__REGION_CANON__"
     ).rename(columns={
         "Magasins": "Nb Clients",
-        "CA 2023 (€)": "CA 2024 (€)"
+        "CA 2024 (€)": "CA 2024 (€)"
     })
 
     st.dataframe(zone_df_std, use_container_width=True)
@@ -717,7 +717,7 @@ with col2:
         df_f, diviseur_etp, region_col=REGION_COL
     ).rename(columns={
         "Magasins": "Nb Clients",
-        "CA 2023 (€)": "CA 2024 (€)"
+        "CA 2024 (€)": "CA 2024 (€)"
     })
 
     st.dataframe(zone_df_idf, use_container_width=True)
